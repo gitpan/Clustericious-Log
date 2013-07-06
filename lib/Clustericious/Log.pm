@@ -1,53 +1,15 @@
 package Clustericious::Log;
 
-use List::Util qw/first/;
-use Log::Log4perl qw/:easy/;
+use strict;
+use warnings;
+use List::Util qw( first );
+use Log::Log4perl qw( :easy );
 use MojoX::Log::Log4perl;
 use File::ReadBackwards;
 
-use warnings;
-use strict;
+# ABSTRACT: A Log::Log4perl wrapper for use with Clustericious.
+our $VERSION = '0.11'; # VERSION
 
-=head1 NAME
-
-Clustericious::Log - A Log::Log4perl wrapper for use with Clustericious.
-
-=cut
-
-=head1 SYNOPSIS
-
-    use Clustericious::Log -init_logging => "appname";
-
-    use Clustericious::Log;
-    INFO "Hi there!";
-
-=head1 DESCRIPTION
-
-This is a simple wrapper around Log::Log4perl for use with
-Clustericious.  It handles initialization and exporting of
-convenient logging functions, and a default set of logging
-patterns.  It also makes the name of the application available
-for logging patterns (see the example).
-
-=head1 EXAMPLE
-
-Here is a sample $HOME/etc/log4perl.conf :
-
-    log4perl.rootLogger=TRACE, LOGFILE
-    log4perl.appender.LOGFILE=Log::Log4perl::Appender::File
-    log4perl.appender.LOGFILE.filename=/tmp/some.log
-    log4perl.appender.LOGFILE.mode=append
-    log4perl.appender.LOGFILE.layout=PatternLayout
-    log4perl.appender.LOGFILE.layout.ConversionPattern=[%d{HH:mm:ss}] [%8.8Z] %C (%F{1}+%L) %5p: %m%n
-    # Note 'Z' is the name of the Clustericious application.
-
-=head1 METHODS
-
-=over
-
-=cut
-
-our $VERSION = '0.10';
 
 sub import {
     my $class = shift;
@@ -60,12 +22,8 @@ sub import {
     *{"${dest}::$_"} = *{"${class}::$_"} for qw/TRACE INFO DEBUG ERROR WARN FATAL LOGDIE get_logger/;
 }
 
-=item init_logging
 
-Start logging.  Looks for log4perl.conf or $app.log4perl.conf
-in $HOME/etc, /util/etc and /etc.
-
-=cut
+our $harness_active = $ENV{HARNESS_ACTIVE};
 
 our $initPid;
 sub init_logging {
@@ -77,18 +35,18 @@ sub init_logging {
     $Log::Log4perl::Logger::INITIALIZED = 0 if $initPid && $initPid != $$;
     $initPid = $$;
 
-    my @Confdirs = $ENV{HARNESS_ACTIVE} ?
+    my @Confdirs = $harness_active ?
         ($ENV{CLUSTERICIOUS_TEST_CONF_DIR}) :
         ($ENV{HOME}, "$ENV{HOME}/etc", "/util/etc", "/etc" );
 
     # Logging
-    $ENV{LOG_LEVEL} ||= ( $ENV{HARNESS_ACTIVE} ? "WARN" : "DEBUG" );
+    $ENV{LOG_LEVEL} ||= ( $harness_active ? "WARN" : "DEBUG" );
 
     my $l4p_dir; # dir with log config file.
     my $l4p_pat; # pattern for screen logging
     my $l4p_file; # file (global or app specific)
 
-    if ($ENV{HARNESS_ACTIVE}) {
+    if ($harness_active) {
         $l4p_pat = "# %5p: %m%n";
     } else  {
         $l4p_dir  = first { -d $_ && (-e "$_/log4perl.conf" || -e "$app_name.log4perl.conf") } @Confdirs;
@@ -126,13 +84,6 @@ sub init_logging {
     return $logger;
 }
 
-=item tail
-
-Returns a string with the last $n lines of the logfile.
-
-If multiple log files are defined, it only uses the first one alphabetically.
-
-=cut
 
 sub tail {
     my $self = shift;
@@ -153,26 +104,98 @@ sub tail {
     return join '', @lines;
 }
 
+
+1;
+
+__END__
+=pod
+
+=head1 NAME
+
+Clustericious::Log - A Log::Log4perl wrapper for use with Clustericious.
+
+=head1 VERSION
+
+version 0.11
+
+=head1 SYNOPSIS
+
+ use Clustericious::Log -init_logging => "appname";
+
+ use Clustericious::Log;
+ INFO "Hi there!";
+
+=head1 DESCRIPTION
+
+This is a simple wrapper around Log::Log4perl for use with
+Clustericious.  It handles initialization and exporting of
+convenient logging functions, and a default set of logging
+patterns.  It also makes the name of the application available
+for logging patterns (see the example).
+
+=head1 EXAMPLE
+
+Here is a sample $HOME/etc/log4perl.conf :
+
+ log4perl.rootLogger=TRACE, LOGFILE
+ log4perl.appender.LOGFILE=Log::Log4perl::Appender::File
+ log4perl.appender.LOGFILE.filename=/tmp/some.log
+ log4perl.appender.LOGFILE.mode=append
+ log4perl.appender.LOGFILE.layout=PatternLayout
+ log4perl.appender.LOGFILE.layout.ConversionPattern=[%d{HH:mm:ss}] [%8.8Z] %C (%F{1}+%L) %5p: %m%n
+ # Note 'Z' is the name of the Clustericious application.
+
+=head1 METHODS
+
+=over
+
+=item init_logging
+
+Start logging.  Looks for log4perl.conf or $app.log4perl.conf
+in $HOME/etc, /util/etc and /etc.
+
+=item tail
+
+Returns a string with the last $n lines of the logfile.
+
+If multiple log files are defined, it only uses the first one alphabetically.
+
 =back
 
 =head1 ENVIRONMENT
 
 The following variables affect logging :
 
-    LOG_LEVEL
-    LOG_FILE
-    MOJO_APP
-    HARNESS_ACTIVE
-    CLUSTERICIOUS_TEST_CONF_DIR
+ LOG_LEVEL
+ LOG_FILE
+ MOJO_APP
+ HARNESS_ACTIVE
+ CLUSTERICIOUS_TEST_CONF_DIR
 
 =head1 NOTES
 
 This is a beta release, the API may change without notice.
 
+=head1 AUTHORS
+
+Current maintainer: Graham Ollis <plicease@cpan.org>
+
+Original author: Brian Duggan
+
 =head1 SEE ALSO
 
 L<Log::Log4perl>, L<Clustericious>
 
+=head1 AUTHOR
+
+Graham Ollis <plicease@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2013 by NASA GSFC.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
 =cut
 
-1;

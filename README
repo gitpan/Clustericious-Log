@@ -1,16 +1,13 @@
-Clustericious-Log
 
-Logging for Clustericious.
 
-See the pod for documentation.
+This archive contains the distribution Clustericious-Log,
+version 0.11:
 
-LICENSE AND COPYRIGHT
+  A Log::Log4perl wrapper for use with Clustericious.
 
-Copyright (C) 2011 Brian Duggan
+This software is copyright (c) 2013 by NASA GSFC.
 
-This program is free software; you can redistribute it and/or modify it
-under the terms of either: the GNU General Public License as published
-by the Free Software Foundation; or the Artistic License.
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
-See http://dev.perl.org/licenses/ for more information.
 
